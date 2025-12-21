@@ -1,1 +1,0 @@
-import{E as a}from"./index.a0b9c180.js";var i={getPrivacy(s,t,o){a.get("/business/privacy",o).then(e=>{s(e.data)}).catch(e=>{console.log(e),t()})},getCookies(s,t,o){a.get("/business/cookies",o).then(e=>{s(e.data)}).catch(e=>{console.log(e),t()})},getTerms(s,t,o){a.get("/business/terms",o).then(e=>{s(e.data)}).catch(e=>{console.log(e),t()})}};export{i as P};
