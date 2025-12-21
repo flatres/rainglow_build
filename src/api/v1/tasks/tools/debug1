@@ -1,3 +1,0 @@
-#!/bin/bash
-
-cd /Users/sdf/dev/ada/api && vendor/bin/crunz task:debug 1 /Users/sdf/dev/ada/api/v1/tasks

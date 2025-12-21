@@ -27,18 +27,8 @@
       "Admin\\": "v1/.routes/Admin",
       "Home\\": "v1/.routes/Home",
       "Auth\\": "v1/.routes/Auth",
-      "Analytics\\": "v1/.routes/Analytics",
-      "Billing\\": "v1/.routes/Billing",
-      "User\\": "v1/.routes/User",
-      "Provider\\": "v1/.routes/Provider",
-      "Search\\": "v1/.routes/Search",
-      "Bookmarks\\": "v1/.routes/Bookmarks",
-      "Business\\": "v1/.routes/Business",
-      "Entities\\": "v1/entities",
       "Dependency\\": "v1/dependencies",
-      "Middleware\\": "v1/middleware",
-      "SocketServer\\": "services/socketServer",
-      "Utilities\\": "v1/utilities"
+      "Middleware\\": "v1/middleware"
     }
   }
 }

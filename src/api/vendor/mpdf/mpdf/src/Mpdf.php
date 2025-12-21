@@ -32,7 +32,7 @@ class Mpdf implements \Psr\Log\LoggerAwareInterface
 	use FpdiTrait;
 	use MpdfPsrLogAwareTrait;
 
-	const VERSION = '8.2.3';
+	const VERSION = '8.2.7';
 
 	const SCALE = 72 / 25.4;
 
@@ -76,7 +76,7 @@ class Mpdf implements \Psr\Log\LoggerAwareInterface
 	var $PDFXauto;
 
 	var $PDFA;
-	var $PDFAversion = '1-B';
+	var $PDFAversion;
 	var $PDFAauto;
 	var $ICCProfile;
 
@@ -1913,6 +1913,11 @@ class Mpdf implements \Psr\Log\LoggerAwareInterface
 		}
 	}
 
+	/**
+	 * @param mixed[] $parms
+	 *
+	 * @return int
+	 */
 	function AddExtGState($parms)
 	{
 		$n = count($this->extgstates);
@@ -1933,6 +1938,7 @@ class Mpdf implements \Psr\Log\LoggerAwareInterface
 		}
 		$n++;
 		$this->extgstates[$n]['parms'] = $parms;
+
 		return $n;
 	}
 
@@ -3912,6 +3918,7 @@ class Mpdf implements \Psr\Log\LoggerAwareInterface
 			$regenerate = true;
 		} // mPDF 6
 
+		$glyphIDtoUni = null;
 		if (empty($font['name']) || $font['originalsize'] != $ttfstat['size'] || $regenerate) {
 			$generator = new MetricsGenerator($this->fontCache, $this->fontDescriptor);
 
@@ -7286,7 +7293,7 @@ class Mpdf implements \Psr\Log\LoggerAwareInterface
 								$translate_x = $this->sizeConverter->convert($vv[0], $maxsize_x, false, false);
 								$tr2 .= $this->transformTranslate($translate_x, 0, true) . ' ';
 							} elseif ($c == 'translatey' && count($vv)) {
-								$translate_y = $this->sizeConverter->convert($vv[1], $maxsize_y, false, false);
+								$translate_y = $this->sizeConverter->convert($vv[0], $maxsize_y, false, false);
 								$tr2 .= $this->transformTranslate(0, $translate_y, true) . ' ';
 							} elseif ($c == 'scale' && count($vv)) {
 								$scale_x = $vv[0] * 100;
@@ -7300,7 +7307,7 @@ class Mpdf implements \Psr\Log\LoggerAwareInterface
 								$scale_x = $vv[0] * 100;
 								$tr2 .= $this->transformScale($scale_x, 0, $cx, $cy, true) . ' ';
 							} elseif ($c == 'scaley' && count($vv)) {
-								$scale_y = $vv[1] * 100;
+								$scale_y = $vv[0] * 100;
 								$tr2 .= $this->transformScale(0, $scale_y, $cx, $cy, true) . ' ';
 							} elseif ($c == 'skew' && count($vv)) {
 								$angle_x = $this->ConvertAngle($vv[0], false);
@@ -10036,9 +10043,10 @@ class Mpdf implements \Psr\Log\LoggerAwareInterface
 				for ($i = 0; $i < 4; $i++) {
 					$m[$i] = array_merge($m1[$i], $m2[$i], $m3[$i]);
 				}
-				if (count($m[0])) {
+				$mFirstLength = count($m[0]);
+				if ($mFirstLength) {
 					$sortarr = [];
-					for ($i = 0; $i < count($m[0]); $i++) {
+					for ($i = 0; $i < $mFirstLength; $i++) {
 						$key = $m[1][$i] * 2;
 						if ($m[3][$i] == 'EMCZ') {
 							$key +=2; // background first then gradient then normal
@@ -13094,7 +13102,7 @@ class Mpdf implements \Psr\Log\LoggerAwareInterface
 			$this->watermarkText = $txt->getText();
 			$this->watermarkTextAlpha = $txt->getAlpha();
 			$this->watermarkAngle = $txt->getAngle();
-			$this->watermark_font = $txt->getFont() === null ? $txt->getFont() : $this->watermark_font;
+			$this->watermark_font = $txt->getFont() !== null ? $txt->getFont() : $this->watermark_font;
 			$this->watermark_size = $txt->getSize();
 
 			return;
@@ -16088,10 +16096,9 @@ class Mpdf implements \Psr\Log\LoggerAwareInterface
 			$array_size = count($arrayaux);
 		}
 
-
 		// Remove empty items // mPDF 6
 		for ($i = $array_size - 1; $i > 0; $i--) {
-			if (empty($arrayaux[$i][0]) && (isset($arrayaux[$i][16]) && $arrayaux[$i][16] !== '0') && empty($arrayaux[$i][7])) {
+			if ('' === $arrayaux[$i][0] && (isset($arrayaux[$i][16]) && $arrayaux[$i][16] !== '0') && empty($arrayaux[$i][7])) {
 				unset($arrayaux[$i]);
 			}
 		}
@@ -16138,7 +16145,8 @@ class Mpdf implements \Psr\Log\LoggerAwareInterface
 			}
 
 			// FIXED TO ALLOW IT TO SHOW '0'
-			if (empty($vetor[0]) && !($vetor[0] === '0') && empty($vetor[7])) { // Ignore empty text and not carrying an internal link
+			if (empty($vetor[0]) && !($vetor[0] === '0') && empty($vetor[7])) {
+				// Ignore empty text and not carrying an internal link
 				// Check if it is the last element. If so then finish printing the block
 				if ($i == ($array_size - 1)) {
 					$this->finishFlowingBlock(true);
@@ -22238,7 +22246,18 @@ class Mpdf implements \Psr\Log\LoggerAwareInterface
 						$extra = $table['max_cell_border_width']['B'] / 2;
 					}
 
-					if ($j == $startcol && ((($y + $maxrowheight + $extra ) > ($pagetrigger + 0.001)) || (($this->keepColumns || !$this->ColActive) && !empty($tablefooter) && ($y + $maxrowheight + $tablefooterrowheight + $extra) > $pagetrigger) && ($this->tableLevel == 1 && $i < ($numrows - $table['headernrows']))) && ($y0 > 0 || $x0 > 0) && !$this->InFooter && $this->autoPageBreak) {
+					// lookahead for pagebreak
+					$pagebreaklookahead = 1;
+					while (isset($table['pagebreak-before']) && isset($table['pagebreak-before'][$i + $pagebreaklookahead]) && $table['pagebreak-before'][$i + $pagebreaklookahead] == 'avoid') {
+						// pagebreak-after is mapped to pagebreak-before on i+1 in Tags/Tr.php
+						$pagebreaklookahead++;
+					}
+					// corner case: if the pagelookahead is bigger than the pagesize, we break anyway, so fill up the page
+					if ($pagebreaklookahead * $maxrowheight + $extra > $pagetrigger + 0.001) {
+						$pagebreaklookahead = 1;
+					}
+					// if we exceed page boundaries: restart table on next page before printing the line
+					if ($j == $startcol && ((($y + $pagebreaklookahead * $maxrowheight + $extra ) > ($pagetrigger + 0.001)) || (($this->keepColumns || !$this->ColActive) && !empty($tablefooter) && ($y + $maxrowheight + $tablefooterrowheight + $extra) > $pagetrigger) && ($this->tableLevel == 1 && $i < ($numrows - $table['headernrows']))) && ($y0 > 0 || $x0 > 0) && !$this->InFooter && $this->autoPageBreak) {
 						if (!$skippage) {
 							$finalSpread = true;
 							$firstSpread = true;
@@ -23882,26 +23901,27 @@ class Mpdf implements \Psr\Log\LoggerAwareInterface
 		if ($end_page < 1) {
 			$end_page = $start_page;
 		}
-		$n_tod = $end_page - $start_page + 1;
-		$last_page = count($this->pages);
-		$n_atend = $last_page - $end_page + 1;
+
+		$deletedPagesCount = $end_page - $start_page + 1;
+		$lastPageNumber = count($this->pages);
+		$remainingPagesFromEndPageCount = $lastPageNumber - $end_page;
 
 		// move pages
-		for ($i = 0; $i < $n_atend; $i++) {
+		for ($i = 0; $i < $remainingPagesFromEndPageCount; $i++) {
 			$this->pages[$start_page + $i] = $this->pages[$end_page + 1 + $i];
 		}
-		// delete pages
-		for ($i = 0; $i < $n_tod; $i++) {
-			unset($this->pages[$last_page - $i]);
-		}
 
+		// delete pages
+		for ($i = 0; $i < $deletedPagesCount; $i++) {
+			unset($this->pages[$lastPageNumber - $i]);
+		}
 
 		/* -- BOOKMARKS -- */
 		// Update Bookmarks
 		foreach ($this->BMoutlines as $i => $o) {
 			if ($o['p'] >= $end_page) {
-				$this->BMoutlines[$i]['p'] -= $n_tod;
-			} elseif ($p < $start_page) {
+				$this->BMoutlines[$i]['p'] -= $deletedPagesCount;
+			} elseif ($o['p'] < $start_page) {
 				unset($this->BMoutlines[$i]);
 			}
 		}
@@ -23915,14 +23935,14 @@ class Mpdf implements \Psr\Log\LoggerAwareInterface
 					if (strpos($pl[4], '@') === 0) {
 						$p = substr($pl[4], 1);
 						if ($p > $end_page) {
-							$this->PageLinks[$i][$key][4] = '@' . ($p - $n_tod);
+							$this->PageLinks[$i][$key][4] = '@' . ($p - $deletedPagesCount);
 						} elseif ($p < $start_page) {
 							unset($this->PageLinks[$i][$key]);
 						}
 					}
 				}
 				if ($i > $end_page) {
-					$newarr[($i - $n_tod)] = $this->PageLinks[$i];
+					$newarr[($i - $deletedPagesCount)] = $this->PageLinks[$i];
 				} elseif ($p < $start_page) {
 					$newarr[$i] = $this->PageLinks[$i];
 				}
@@ -23949,7 +23969,7 @@ class Mpdf implements \Psr\Log\LoggerAwareInterface
 			$newarr = [];
 			foreach ($this->pageDim as $p => $v) {
 				if ($p > $end_page) {
-					$newarr[($p - $n_tod)] = $this->pageDim[$p];
+					$newarr[($p - $deletedPagesCount)] = $this->pageDim[$p];
 				} elseif ($p < $start_page) {
 					$newarr[$p] = $this->pageDim[$p];
 				}
@@ -23962,7 +23982,7 @@ class Mpdf implements \Psr\Log\LoggerAwareInterface
 		if (count($this->saveHTMLHeader)) {
 			foreach ($this->saveHTMLHeader as $p => $v) {
 				if ($p > $end_page) {
-					$newarr[($p - $n_tod)] = $this->saveHTMLHeader[$p];
+					$newarr[($p - $deletedPagesCount)] = $this->saveHTMLHeader[$p];
 				} // mPDF 5.7.3
 				elseif ($p < $start_page) {
 					$newarr[$p] = $this->saveHTMLHeader[$p];
@@ -23975,7 +23995,7 @@ class Mpdf implements \Psr\Log\LoggerAwareInterface
 			$newarr = [];
 			foreach ($this->saveHTMLFooter as $p => $v) {
 				if ($p > $end_page) {
-					$newarr[($p - $n_tod)] = $this->saveHTMLFooter[$p];
+					$newarr[($p - $deletedPagesCount)] = $this->saveHTMLFooter[$p];
 				} elseif ($p < $start_page) {
 					$newarr[$p] = $this->saveHTMLFooter[$p];
 				}
@@ -23987,7 +24007,7 @@ class Mpdf implements \Psr\Log\LoggerAwareInterface
 		// Update Internal Links
 		foreach ($this->internallink as $key => $o) {
 			if ($o['PAGE'] > $end_page) {
-				$this->internallink[$key]['PAGE'] -= $n_tod;
+				$this->internallink[$key]['PAGE'] -= $deletedPagesCount;
 			} elseif ($o['PAGE'] < $start_page) {
 				unset($this->internallink[$key]);
 			}
@@ -23996,7 +24016,7 @@ class Mpdf implements \Psr\Log\LoggerAwareInterface
 		// Update Links
 		foreach ($this->links as $key => $o) {
 			if ($o[0] > $end_page) {
-				$this->links[$key][0] -= $n_tod;
+				$this->links[$key][0] -= $deletedPagesCount;
 			} elseif ($o[0] < $start_page) {
 				unset($this->links[$key]);
 			}
@@ -24005,7 +24025,7 @@ class Mpdf implements \Psr\Log\LoggerAwareInterface
 		// Update Form fields
 		foreach ($this->form->forms as $key => $f) {
 			if ($f['page'] > $end_page) {
-				$this->form->forms[$key]['page'] -= $n_tod;
+				$this->form->forms[$key]['page'] -= $deletedPagesCount;
 			} elseif ($f['page'] < $start_page) {
 				unset($this->form->forms[$key]);
 			}
@@ -24018,7 +24038,7 @@ class Mpdf implements \Psr\Log\LoggerAwareInterface
 			foreach ($this->PageAnnots as $p => $anno) {
 				if ($p > $end_page) {
 					foreach ($anno as $o) {
-						$newarr[($p - $n_tod)][] = $o;
+						$newarr[($p - $deletedPagesCount)][] = $o;
 					}
 				} elseif ($p < $start_page) {
 					$newarr[$p] = $this->PageAnnots[$p];
@@ -24032,7 +24052,7 @@ class Mpdf implements \Psr\Log\LoggerAwareInterface
 		// Update PageNumSubstitutions
 		foreach ($this->PageNumSubstitutions as $k => $v) {
 			if ($this->PageNumSubstitutions[$k]['from'] > $end_page) {
-				$this->PageNumSubstitutions[$k]['from'] -= $n_tod;
+				$this->PageNumSubstitutions[$k]['from'] -= $deletedPagesCount;
 			} elseif ($this->PageNumSubstitutions[$k]['from'] < $start_page) {
 				unset($this->PageNumSubstitutions[$k]);
 			}

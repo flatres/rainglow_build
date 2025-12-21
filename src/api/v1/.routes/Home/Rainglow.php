@@ -1,0 +1,123 @@
+<?php
+namespace Home;
+use Psr\Container\ContainerInterface as Container;
+use \Psr\Http\Message\ServerRequestInterface as Request;
+use \Psr\Http\Message\ResponseInterface as Response;
+
+class Rainglow
+{
+    /** @var \Slim\Container
+     */
+
+    protected $container;
+
+    public function __construct(Container $container)
+    {
+       $this->sql= $container->get('mysql');
+    }
+
+
+    // call made by the curtain closer. Include current state.
+    public function stateGet($request, $response, $args)
+    {
+      $data = $this->sql->query('Select * from rainglow_data ORDER BY timestamp DESC LIMIT 1', [])[0] ?? [];
+      return emit($response, $data);
+    }
+
+
+    // call made by the curtain closer. Include current state.
+    public function statePost($request, $response, $args)
+    {
+
+      $data = $request->getParsedBody();
+
+        // Basic fields
+      $lat = isset($data['lat']) ? (float)$data['lat'] : 0.0;
+      $lng = isset($data['lon']) ? (float)$data['lon'] : 0.0; // maps to column `lng`
+
+      $tempC = isset($data['center']['tempC']) ? (float)$data['center']['tempC'] : 0.0;
+      $r_c   = isset($data['center']['color']['r']) ? (int)$data['center']['color']['r'] : 0;
+      $g_c   = isset($data['center']['color']['g']) ? (int)$data['center']['color']['g'] : 0;
+      $b_c   = isset($data['center']['color']['b']) ? (int)$data['center']['color']['b'] : 0;
+
+      $segments = isset($data['segments']) && is_array($data['segments'])
+          ? $data['segments']
+          : [];
+
+      // Column list in order
+      $fields = [
+          'lat', 'lng', 'temp_c', 'r_c', 'g_c', 'b_c'
+      ];
+
+      // For each of 6 segments, append the group of columns
+      for ($i = 0; $i < 6; $i++) {
+          $fields[] = "dayOffset_{$i}";
+          $fields[] = "probRain_{$i}";
+          $fields[] = "rainMM_{$i}";
+          $fields[] = "timeStart_{$i}";
+          $fields[] = "timeEnd_{$i}";
+          $fields[] = "r_{$i}";
+          $fields[] = "g_{$i}";
+          $fields[] = "b_{$i}";
+      }
+
+      // Values in the same order
+      $values = [
+          $lat,
+          $lng,
+          $tempC,
+          $r_c,
+          $g_c,
+          $b_c
+      ];
+
+      // Helper: segment by index
+      $segmentByIndex = [];
+      foreach ($segments as $seg) {
+          if (isset($seg['index'])) {
+              $idx = (int)$seg['index'];
+              if ($idx >= 0 && $idx < 6) {
+                  $segmentByIndex[$idx] = $seg;
+              }
+          }
+      }
+
+      // Fill segment data
+      for ($i = 0; $i < 6; $i++) {
+          $seg = isset($segmentByIndex[$i]) ? $segmentByIndex[$i] : [];
+
+          $dayOffset = isset($seg['dayOffset']) ? (int)$seg['dayOffset'] : 0;
+          $probRain  = isset($seg['probRain'])  ? (float)$seg['probRain'] : 0.0;
+          $rainMM    = isset($seg['rainMm'])    ? (float)$seg['rainMm']   : 0.0;
+
+          // Now stored as varchar(11) – keep the original strings
+          $timeStart = isset($seg['timeStart']) ? (string)$seg['timeStart'] : '';
+          $timeEnd   = isset($seg['timeEnd'])   ? (string)$seg['timeEnd']   : '';
+
+          $r = isset($seg['color']['r']) ? (int)$seg['color']['r'] : 0;
+          $g = isset($seg['color']['g']) ? (int)$seg['color']['g'] : 0;
+          $b = isset($seg['color']['b']) ? (int)$seg['color']['b'] : 0;
+
+          $values[] = $dayOffset;
+          $values[] = $probRain;
+          $values[] = $rainMM;
+          $values[] = $timeStart;
+          $values[] = $timeEnd;
+          $values[] = $r;
+          $values[] = $g;
+          $values[] = $b;
+      }
+
+      // Build SQL
+      $columnsSql   = '`' . implode('`, `', $fields) . '`';
+      $placeholders = implode(', ', array_fill(0, count($fields), '?'));
+
+      $this->sql->insert('rainglow_data', $columnsSql, $values);
+      return emit($response, true);
+      // $sql = "INSERT INTO `rainglow_data` ($columnsSql) VALUES ($placeholders)";
+
+      }
+
+}
+
+ ?>

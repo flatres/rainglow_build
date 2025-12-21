@@ -7,13 +7,12 @@ namespace Composer\Autoload;
 class ComposerStaticInitc253bda83f86b31749a79396ee2e094f
 {
     public static $files = array (
-        'a4a119a56e50fbb293281d9a48007e0e' => __DIR__ . '/..' . '/symfony/polyfill-php80/bootstrap.php',
         '6e3fae29631ef280660b3cdad06f25a8' => __DIR__ . '/..' . '/symfony/deprecation-contracts/function.php',
+        'a4a119a56e50fbb293281d9a48007e0e' => __DIR__ . '/..' . '/symfony/polyfill-php80/bootstrap.php',
         '0e6d7bf4a5811bfa5cf40c5ccd6fae6a' => __DIR__ . '/..' . '/symfony/polyfill-mbstring/bootstrap.php',
         '320cde22f66dd4f5d3fd621d3e88b98f' => __DIR__ . '/..' . '/symfony/polyfill-ctype/bootstrap.php',
         'e69f7f6ee287b969198c3c9d6777bd38' => __DIR__ . '/..' . '/symfony/polyfill-intl-normalizer/bootstrap.php',
         'ad155f8f1cf0d418fe49e248db8c661b' => __DIR__ . '/..' . '/react/promise/src/functions_include.php',
-        '25072dd6e2470089de65ae7bf11d3109' => __DIR__ . '/..' . '/symfony/polyfill-php72/bootstrap.php',
         'f598d06aa772fa33d905e87be6398fb1' => __DIR__ . '/..' . '/symfony/polyfill-intl-idn/bootstrap.php',
         '7b11c4dc42b3b3023073cb14e519683c' => __DIR__ . '/..' . '/ralouphie/getallheaders/src/getallheaders.php',
         'a0edc8309cc5e1d60e3047b5df6b7052' => __DIR__ . '/..' . '/guzzlehttp/psr7/src/functions_include.php',
@@ -40,21 +39,11 @@ class ComposerStaticInitc253bda83f86b31749a79396ee2e094f
         array (
             'ZipStream\\' => 10,
         ),
-        'W' => 
-        array (
-            'Webmozart\\Assert\\' => 17,
-        ),
-        'U' => 
-        array (
-            'Utilities\\' => 10,
-            'User\\' => 5,
-        ),
         'S' => 
         array (
             'Symfony\\Polyfill\\Php81\\' => 23,
             'Symfony\\Polyfill\\Php80\\' => 23,
             'Symfony\\Polyfill\\Php73\\' => 23,
-            'Symfony\\Polyfill\\Php72\\' => 23,
             'Symfony\\Polyfill\\Mbstring\\' => 26,
             'Symfony\\Polyfill\\Intl\\Normalizer\\' => 33,
             'Symfony\\Polyfill\\Intl\\Idn\\' => 26,
@@ -80,10 +69,8 @@ class ComposerStaticInitc253bda83f86b31749a79396ee2e094f
             'Symfony\\Component\\Config\\' => 25,
             'Svg\\' => 4,
             'Stripe\\' => 7,
-            'SocketServer\\' => 13,
             'Slim\\Psr7\\' => 10,
             'Slim\\' => 5,
-            'Search\\' => 7,
             'Sabberworm\\CSS\\' => 15,
         ),
         'R' => 
@@ -107,7 +94,6 @@ class ComposerStaticInitc253bda83f86b31749a79396ee2e094f
             'Psr\\Http\\Client\\' => 16,
             'Psr\\EventDispatcher\\' => 20,
             'Psr\\Container\\' => 14,
-            'Provider\\' => 9,
             'PhpOption\\' => 10,
             'PhpOffice\\PhpSpreadsheet\\' => 25,
             'PhpDocReader\\' => 13,
@@ -160,7 +146,6 @@ class ComposerStaticInitc253bda83f86b31749a79396ee2e094f
         'E' => 
         array (
             'Evenement\\' => 10,
-            'Entities\\' => 9,
             'Egulias\\EmailValidator\\' => 23,
         ),
         'D' => 
@@ -178,18 +163,12 @@ class ComposerStaticInitc253bda83f86b31749a79396ee2e094f
         array (
             'Crunz\\' => 6,
             'Cron\\' => 5,
+            'Composer\\Pcre\\' => 14,
             'Complex\\' => 8,
-        ),
-        'B' => 
-        array (
-            'Business\\' => 9,
-            'Bookmarks\\' => 10,
-            'Billing\\' => 8,
         ),
         'A' => 
         array (
             'Auth\\' => 5,
-            'Analytics\\' => 10,
             'Admin\\' => 6,
         ),
     );
@@ -203,18 +182,6 @@ class ComposerStaticInitc253bda83f86b31749a79396ee2e094f
         array (
             0 => __DIR__ . '/..' . '/maennchen/zipstream-php/src',
         ),
-        'Webmozart\\Assert\\' => 
-        array (
-            0 => __DIR__ . '/..' . '/webmozart/assert/src',
-        ),
-        'Utilities\\' => 
-        array (
-            0 => __DIR__ . '/../..' . '/v1/utilities',
-        ),
-        'User\\' => 
-        array (
-            0 => __DIR__ . '/../..' . '/v1/.routes/User',
-        ),
         'Symfony\\Polyfill\\Php81\\' => 
         array (
             0 => __DIR__ . '/..' . '/symfony/polyfill-php81',
@@ -226,10 +193,6 @@ class ComposerStaticInitc253bda83f86b31749a79396ee2e094f
         'Symfony\\Polyfill\\Php73\\' => 
         array (
             0 => __DIR__ . '/..' . '/symfony/polyfill-php73',
-        ),
-        'Symfony\\Polyfill\\Php72\\' => 
-        array (
-            0 => __DIR__ . '/..' . '/symfony/polyfill-php72',
         ),
         'Symfony\\Polyfill\\Mbstring\\' => 
         array (
@@ -331,10 +294,6 @@ class ComposerStaticInitc253bda83f86b31749a79396ee2e094f
         array (
             0 => __DIR__ . '/..' . '/stripe/stripe-php/lib',
         ),
-        'SocketServer\\' => 
-        array (
-            0 => __DIR__ . '/../..' . '/services/socketServer',
-        ),
         'Slim\\Psr7\\' => 
         array (
             0 => __DIR__ . '/..' . '/slim/psr7/src',
@@ -342,10 +301,6 @@ class ComposerStaticInitc253bda83f86b31749a79396ee2e094f
         'Slim\\' => 
         array (
             0 => __DIR__ . '/..' . '/slim/slim/Slim',
-        ),
-        'Search\\' => 
-        array (
-            0 => __DIR__ . '/../..' . '/v1/.routes/Search',
         ),
         'Sabberworm\\CSS\\' => 
         array (
@@ -416,10 +371,6 @@ class ComposerStaticInitc253bda83f86b31749a79396ee2e094f
         'Psr\\Container\\' => 
         array (
             0 => __DIR__ . '/..' . '/psr/container/src',
-        ),
-        'Provider\\' => 
-        array (
-            0 => __DIR__ . '/../..' . '/v1/.routes/Provider',
         ),
         'PhpOption\\' => 
         array (
@@ -521,10 +472,6 @@ class ComposerStaticInitc253bda83f86b31749a79396ee2e094f
         array (
             0 => __DIR__ . '/..' . '/evenement/evenement/src',
         ),
-        'Entities\\' => 
-        array (
-            0 => __DIR__ . '/../..' . '/v1/entities',
-        ),
         'Egulias\\EmailValidator\\' => 
         array (
             0 => __DIR__ . '/..' . '/egulias/email-validator/src',
@@ -539,7 +486,7 @@ class ComposerStaticInitc253bda83f86b31749a79396ee2e094f
         ),
         'Doctrine\\Deprecations\\' => 
         array (
-            0 => __DIR__ . '/..' . '/doctrine/deprecations/lib/Doctrine/Deprecations',
+            0 => __DIR__ . '/..' . '/doctrine/deprecations/src',
         ),
         'Doctrine\\Common\\Lexer\\' => 
         array (
@@ -569,29 +516,17 @@ class ComposerStaticInitc253bda83f86b31749a79396ee2e094f
         array (
             0 => __DIR__ . '/..' . '/dragonmantank/cron-expression/src/Cron',
         ),
+        'Composer\\Pcre\\' => 
+        array (
+            0 => __DIR__ . '/..' . '/composer/pcre/src',
+        ),
         'Complex\\' => 
         array (
             0 => __DIR__ . '/..' . '/markbaker/complex/classes/src',
         ),
-        'Business\\' => 
-        array (
-            0 => __DIR__ . '/../..' . '/v1/.routes/Business',
-        ),
-        'Bookmarks\\' => 
-        array (
-            0 => __DIR__ . '/../..' . '/v1/.routes/Bookmarks',
-        ),
-        'Billing\\' => 
-        array (
-            0 => __DIR__ . '/../..' . '/v1/.routes/Billing',
-        ),
         'Auth\\' => 
         array (
             0 => __DIR__ . '/../..' . '/v1/.routes/Auth',
-        ),
-        'Analytics\\' => 
-        array (
-            0 => __DIR__ . '/../..' . '/v1/.routes/Analytics',
         ),
         'Admin\\' => 
         array (
@@ -642,8 +577,6 @@ class ComposerStaticInitc253bda83f86b31749a79396ee2e094f
         'TCPDF_FONTS' => __DIR__ . '/..' . '/tecnickcom/tcpdf/include/tcpdf_fonts.php',
         'TCPDF_FONT_DATA' => __DIR__ . '/..' . '/tecnickcom/tcpdf/include/tcpdf_font_data.php',
         'TCPDF_IMAGES' => __DIR__ . '/..' . '/tecnickcom/tcpdf/include/tcpdf_images.php',
-        'TCPDF_IMPORT' => __DIR__ . '/..' . '/tecnickcom/tcpdf/tcpdf_import.php',
-        'TCPDF_PARSER' => __DIR__ . '/..' . '/tecnickcom/tcpdf/tcpdf_parser.php',
         'TCPDF_STATIC' => __DIR__ . '/..' . '/tecnickcom/tcpdf/include/tcpdf_static.php',
         'UnhandledMatchError' => __DIR__ . '/..' . '/symfony/polyfill-php80/Resources/stubs/UnhandledMatchError.php',
         'ValueError' => __DIR__ . '/..' . '/symfony/polyfill-php80/Resources/stubs/ValueError.php',
