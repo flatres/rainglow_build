@@ -1,5 +1,5 @@
 #!/bin/bash
-git checkout maain
+git checkout main
 git pull origin main
 echo "Syncing API"
 rsync -avr --delete-after ../../api/ src/api/ --exclude 'api'
