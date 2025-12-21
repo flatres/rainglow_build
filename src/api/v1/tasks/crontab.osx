@@ -1,0 +1,1 @@
+* * * * * /Applications/MAMP/bin/php/php7.3.8/bin/php -c "/Library/Application Support/appsolute/MAMP PRO/conf/php7.3.8.ini" /Users/sdf/dev/ada/api/vendor/bin/crunz schedule:run /Users/sdf/dev/ada/api/v1/tasks

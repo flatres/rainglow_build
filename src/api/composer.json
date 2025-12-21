@@ -1,0 +1,44 @@
+{
+  "require": {
+    "php": "^7.4.3",
+    "cboden/ratchet": "^0.4.3",
+    "phpoffice/phpspreadsheet": "^1.18",
+    "mpdf/mpdf": "^8.0.12",
+    "dompdf/dompdf": "^1.1",
+    "tecnickcom/tcpdf": "^6.3",
+    "react/promise-timer": "^1.5",
+    "slim/slim": "^4.0",
+    "slim/psr7": "^1.6",
+    "wildbit/postmark-php": "^3.0",
+    "guzzlehttp/guzzle": "^6.5",
+    "monolog/monolog": "^2.3",
+    "crunzphp/crunz": "^3.0",
+    "vlucas/phpdotenv": "^5.3",
+    "fpdf/fpdf": "^1.83",
+    "php-di/slim-bridge": "^3.3",
+    "symfony/http-client": "^5.4",
+    "nyholm/psr7": "^1.8",
+    "norkunas/onesignal-php-api": "^2.11",
+    "gumlet/php-image-resize": "2.0.*",
+    "stripe/stripe-php": "^14.0"
+  },
+  "autoload": {
+    "psr-4": {
+      "Admin\\": "v1/.routes/Admin",
+      "Home\\": "v1/.routes/Home",
+      "Auth\\": "v1/.routes/Auth",
+      "Analytics\\": "v1/.routes/Analytics",
+      "Billing\\": "v1/.routes/Billing",
+      "User\\": "v1/.routes/User",
+      "Provider\\": "v1/.routes/Provider",
+      "Search\\": "v1/.routes/Search",
+      "Bookmarks\\": "v1/.routes/Bookmarks",
+      "Business\\": "v1/.routes/Business",
+      "Entities\\": "v1/entities",
+      "Dependency\\": "v1/dependencies",
+      "Middleware\\": "v1/middleware",
+      "SocketServer\\": "services/socketServer",
+      "Utilities\\": "v1/utilities"
+    }
+  }
+}

@@ -1,0 +1,3 @@
+#!/bin/bash
+
+cd /Users/sdf/dev/ada/api && vendor/bin/crunz schedule:run /Users/sdf/dev/ada/api/v1/tasks
