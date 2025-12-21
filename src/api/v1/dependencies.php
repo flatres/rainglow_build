@@ -17,7 +17,7 @@ $container->set('logger', function ($c) {
 
 // monolog
 $container->set('mysql',  function ($c) {
-  $mysql = new \Dependency\Databases\RainGlow();
+  $mysql = new \Dependency\Databases\Rainglow();
   return $mysql;
 });
 
