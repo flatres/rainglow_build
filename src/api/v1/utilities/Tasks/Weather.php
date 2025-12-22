@@ -8,5 +8,5 @@ $dotenv->load();
 
 $timestamp = date("Y-m-d H:i:s", time());
 
-$this->ada = new \Dependency\Databases\Rainglow();
+$sql = new \Dependency\Databases\Rainglow();
 echo 'ran';
