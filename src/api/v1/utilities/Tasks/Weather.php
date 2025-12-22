@@ -60,6 +60,8 @@ try {
   $result = fetchWeatherOpenMeteoFirstThenOWM($lat, $lon, DEFAULT_HOURS, DEFAULT_TIMEFORMAT);
   saveWeatherRow($sql, $result['source'], $lat, $lon, $result['open_meteo_json'], $result['upstream_json']);
   echo 'saved';
+  writeExpectedStateToRainglowData($sql, $lat, $lon);
+  echo 'state saved';
   exit(0);
 } catch (Throwable $e) {
   fwrite(STDERR, "Weather fetch failed: " . $e->getMessage() . PHP_EOL);
@@ -266,4 +268,266 @@ function saveWeatherRow($sql, string $source, float $lat, float $lon, array $ope
     json_encode($openMeteoJson, JSON_UNESCAPED_SLASHES),
     $up
   ]);
+
+  function writeExpectedStateToRainglowData($sql, float $lat = 51.42, float $lon = -1.73)
+  {
+    // 1) Load latest cached Open-Meteo JSON
+    $data = $sql->query(
+      "SELECT id,
+              fetched_at,
+              UNIX_TIMESTAMP(fetched_at) AS fetched_at_unix,
+              source,
+              om_json
+      FROM rainglow_weather
+      WHERE latitude = ? AND longitude = ?
+      ORDER BY fetched_at DESC
+      LIMIT 1",
+      [$lat, $lon]
+    );
+
+    if (!isset($data[0])) {
+      throw new \RuntimeException('No cached weather found in rainglow_weather.');
+    }
+
+    $row = $data[0];
+    $om  = $row['om_json'];
+
+    if (is_string($om)) {
+      $decoded = json_decode($om, true);
+      if (!is_array($decoded)) {
+        throw new \RuntimeException('rainglow_weather.om_json is not valid JSON.');
+      }
+      $om = $decoded;
+    }
+
+    // 2) Validate required hourly fields
+    if (
+      !isset($om['hourly']['time'], $om['hourly']['temperature_2m'], $om['hourly']['precipitation'], $om['hourly']['precipitation_probability'])
+      || !is_array($om['hourly']['time'])
+    ) {
+      throw new \RuntimeException('om_json missing required hourly arrays.');
+    }
+
+    $times = $om['hourly']['time']; // ideally local unixtime (Open-Meteo with timeformat=unixtime + timezone=auto)
+    $temps = $om['hourly']['temperature_2m'];
+    $prec  = $om['hourly']['precipitation'];
+    $prob  = $om['hourly']['precipitation_probability'];
+
+    $utcOffset = isset($om['utc_offset_seconds']) ? (int)$om['utc_offset_seconds'] : 0;
+
+    // Build a timestamp->index map for fast lookup
+    $timeToIndex = [];
+    foreach ($times as $i => $t) {
+      $timeToIndex[(string)(int)$t] = (int)$i;
+    }
+
+    // 3) Compute local "now" and today's local midnight
+    $nowUtc   = time();
+    $nowLocal = $nowUtc + $utcOffset;
+
+    $localMidnight   = (int)(floor($nowLocal / 86400) * 86400);
+    $secondsIntoDay  = $nowLocal - $localMidnight;
+    $currentBlockIdx = (int)floor($secondsIntoDay / (4 * 3600)); // 0..5
+    if ($currentBlockIdx < 0) $currentBlockIdx = 0;
+    if ($currentBlockIdx > 5) $currentBlockIdx = 5;
+
+    // 4) Center: choose temperature for current hour (nearest <= nowLocal)
+    $centerTempC = $this->nearestHourlyTemperatureLocal($times, $temps, $nowLocal);
+
+    // Center colour: temp scale unless "definitely rainy now" (then white alert)
+    $centerRgb = $this->centerTempToRgb($centerTempC);
+
+    // 5) Compute segments 0..5
+    // Past blocks use tomorrow's equivalent block (dayOffset=1), future/current blocks dayOffset=0.
+    $segments = [];
+    for ($i = 0; $i < 6; $i++) {
+
+      $dayOffset = ($i < $currentBlockIdx) ? 1 : 0;
+
+      $startTs = $localMidnight + ($dayOffset * 86400) + ($i * 4 * 3600);
+      $endTs   = $startTs + (4 * 3600);
+
+      // Pull 4 hourly points for this block, if present
+      $idxs = [];
+      for ($t = $startTs; $t < $endTs; $t += 3600) {
+        $key = (string)$t;
+        if (isset($timeToIndex[$key])) {
+          $idxs[] = $timeToIndex[$key];
+        }
+      }
+
+      $maxRainMm = 0.0;
+      $maxProb   = 0.0; // keep float as your schema uses float
+      if (!empty($idxs)) {
+        foreach ($idxs as $k) {
+          $mm = isset($prec[$k]) ? (float)$prec[$k] : 0.0;
+          $pp = isset($prob[$k]) ? (float)$prob[$k] : 0.0; // Open-Meteo gives % already
+          if ($mm > $maxRainMm) $maxRainMm = $mm;
+          if ($pp > $maxProb)   $maxProb   = $pp;
+        }
+      }
+
+      $rgb = $this->segmentToRgb($maxRainMm, $maxProb);
+
+      // timeStart/timeEnd are varchar(11). Use "HH:MM-HH:MM" (11 chars).
+      $timeStartStr = $this->hhmmFromLocalTs($startTs) . '-' . $this->hhmmFromLocalTs($endTs - 60);
+
+      $segments[$i] = [
+        'dayOffset' => $dayOffset,
+        'probRain'  => $maxProb,    // percent 0..100
+        'rainMm'    => $maxRainMm,
+        'timeStart' => substr($timeStartStr, 0, 5),     // "HH:MM"
+        'timeEnd'   => substr($timeStartStr, 6, 5),     // "HH:MM"
+        'color'     => $rgb,
+      ];
+    }
+
+    // "Definitely rainy now" rule (optional): current block maxProb>=80 AND rain>=0.5
+    $cur = $segments[$currentBlockIdx] ?? null;
+    if ($cur && ((float)$cur['probRain'] >= 80.0) && ((float)$cur['rainMm'] >= 0.5)) {
+      $centerRgb = ['r' => 255, 'g' => 255, 'b' => 255];
+    }
+
+    // 6) Build column list exactly like your statePost()
+    $fields = ['lat', 'lng', 'temp_c', 'r_c', 'g_c', 'b_c'];
+    for ($i = 0; $i < 6; $i++) {
+      $fields[] = "dayOffset_{$i}";
+      $fields[] = "probRain_{$i}";
+      $fields[] = "rainMM_{$i}";
+      $fields[] = "timeStart_{$i}";
+      $fields[] = "timeEnd_{$i}";
+      $fields[] = "r_{$i}";
+      $fields[] = "g_{$i}";
+      $fields[] = "b_{$i}";
+    }
+
+    $values = [
+      $lat,
+      $lon,
+      $centerTempC,
+      (int)$centerRgb['r'],
+      (int)$centerRgb['g'],
+      (int)$centerRgb['b'],
+    ];
+
+    for ($i = 0; $i < 6; $i++) {
+      $seg = $segments[$i] ?? [
+        'dayOffset' => 0,
+        'probRain'  => 0.0,
+        'rainMm'    => 0.0,
+        'timeStart' => '',
+        'timeEnd'   => '',
+        'color'     => ['r' => 0, 'g' => 0, 'b' => 0],
+      ];
+
+      $values[] = (int)$seg['dayOffset'];
+      $values[] = (float)$seg['probRain'];
+      $values[] = (float)$seg['rainMm'];
+      $values[] = (string)$seg['timeStart']; // varchar(11) in your comment; these are "HH:MM"
+      $values[] = (string)$seg['timeEnd'];   // "HH:MM"
+      $values[] = (int)$seg['color']['r'];
+      $values[] = (int)$seg['color']['g'];
+      $values[] = (int)$seg['color']['b'];
+    }
+
+    $columnsSql = '`' . implode('`, `', $fields) . '`';
+
+    // 7) Insert into rainglow_data (using your wrapper)
+    $sql->insert('rainglow_data', $columnsSql, $values);
+
+    return true;
+  }
+
+  /**
+   * Convert local unix timestamp (already offset-adjusted) to "HH:MM" in 24h.
+   */
+  function hhmmFromLocalTs(int $localTs): string
+  {
+    $h = (int)gmdate('H', $localTs);
+    $m = (int)gmdate('i', $localTs);
+    return sprintf('%02d:%02d', $h, $m);
+  }
+
+  /**
+   * Choose temperature at nearest hourly time <= nowLocal.
+   * Assumes $times are local unixtime hours (Open-Meteo with timeformat=unixtime + timezone=auto).
+   */
+  function nearestHourlyTemperatureLocal(array $times, array $temps, int $nowLocal): float
+  {
+    $bestIdx = 0;
+    foreach ($times as $i => $t) {
+      $tt = (int)$t;
+      if ($tt <= $nowLocal) $bestIdx = (int)$i;
+      else break;
+    }
+    return isset($temps[$bestIdx]) ? (float)$temps[$bestIdx] : 0.0;
+  }
+
+  /**
+   * Segment colour logic consistent with your RainGlow description:
+   * - If rain < 0.5mm: green brightness based on dryness (100 - probRain)
+   * - Else: blue->purple base based on rain intensity, brightness based on probRain
+   */
+  function segmentToRgb(float $rainMm, float $probRainPct): array
+  {
+    $probRainPct = max(0.0, min(100.0, $probRainPct));
+
+    if ($rainMm < 0.5) {
+      $dry = 100.0 - $probRainPct; // 0..100
+      $g = (int)round($this->scale($dry, 0.0, 100.0, 40.0, 255.0)); // never off
+      return ['r' => 0, 'g' => $g, 'b' => 0];
+    }
+
+    // intensity factor for colour blend (tune if desired)
+    $t = 0.0;
+    if ($rainMm <= 2.0)      $t = 0.0; // blue
+    else if ($rainMm <= 5.0) $t = 0.5; // mid
+    else                     $t = 1.0; // purple
+
+    $blue   = ['r' => 0,   'g' => 80,  'b' => 255];
+    $purple = ['r' => 180, 'g' => 0,   'b' => 255];
+
+    $base = [
+      'r' => $blue['r'] + ($purple['r'] - $blue['r']) * $t,
+      'g' => $blue['g'] + ($purple['g'] - $blue['g']) * $t,
+      'b' => $blue['b'] + ($purple['b'] - $blue['b']) * $t,
+    ];
+
+    $brightness = $this->scale($probRainPct, 0.0, 100.0, 60.0, 255.0);
+
+    return [
+      'r' => (int)round($base['r'] * ($brightness / 255.0)),
+      'g' => (int)round($base['g'] * ($brightness / 255.0)),
+      'b' => (int)round($base['b'] * ($brightness / 255.0)),
+    ];
+  }
+
+  /**
+   * Center temperature colour: simple cold->warm ramp.
+   * (If you have an existing scale in firmware/UI, swap this to match exactly.)
+   */
+  function centerTempToRgb(float $tempC): array
+  {
+    $min = -5.0;
+    $max = 30.0;
+    $t = ($tempC - $min) / ($max - $min);
+    $t = max(0.0, min(1.0, $t));
+
+    $cold = ['r' => 0,   'g' => 120, 'b' => 255];
+    $warm = ['r' => 255, 'g' => 60,  'b' => 0];
+
+    return [
+      'r' => (int)round($cold['r'] + ($warm['r'] - $cold['r']) * $t),
+      'g' => (int)round($cold['g'] + ($warm['g'] - $cold['g']) * $t),
+      'b' => (int)round($cold['b'] + ($warm['b'] - $cold['b']) * $t),
+    ];
+  }
+
+ function scale(float $x, float $inMin, float $inMax, float $outMin, float $outMax): float
+  {
+    if ($inMax <= $inMin) return $outMin;
+    $x = max($inMin, min($inMax, $x));
+    $p = ($x - $inMin) / ($inMax - $inMin);
+    return $outMin + ($outMax - $outMin) * $p;
+  }
 }
