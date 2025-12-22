@@ -248,6 +248,9 @@ function saveWeatherRow($sql, string $source, float $lat, float $lon, array $ope
   $tzAbbr = $openMeteoJson['timezone_abbreviation'] ?? null;
   $utcOffset = $openMeteoJson['utc_offset_seconds'] ?? null;
 
+  $up = is_null($upstreamJson) ? '{}' : json_encode($upstreamJson, JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR);
+
+
   $data = $sql->query(
     "INSERT INTO rainglow_weather
       (fetched_at, source, latitude, longitude, timezone, timezone_abbreviation, utc_offset_seconds, om_json, upstream_json)
@@ -261,6 +264,6 @@ function saveWeatherRow($sql, string $source, float $lat, float $lon, array $ope
     $tzAbbr,
     is_null($utcOffset) ? null : (int)$utcOffset,
     json_encode($openMeteoJson, JSON_UNESCAPED_SLASHES),
-    is_null($upstreamJson) ? null : json_encode($upstreamJson, JSON_UNESCAPED_SLASHES),
+    $up
   ]);
 }
