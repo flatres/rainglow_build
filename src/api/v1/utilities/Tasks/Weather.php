@@ -252,7 +252,7 @@ function saveWeatherRow($sql, string $source, float $lat, float $lon, array $ope
     "INSERT INTO rainglow_weather
       (fetched_at, source, latitude, longitude, timezone, timezone_abbreviation, utc_offset_seconds, om_json, upstream_json)
      VALUES
-      (NOW(6), ?, ?, ?, ?, ?, ?, CAST(? AS JSON), CAST(? AS JSON))",
+      (NOW(6), ?, ?, ?, ?, ?, ?, ?, ?)",
   [
     $source,
     $lat,
