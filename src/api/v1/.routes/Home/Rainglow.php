@@ -16,8 +16,84 @@ class Rainglow
        $this->sql= $container->get('mysql');
     }
 
+    public function weatherGet($request, $response, $args)
+    {
 
-    // call made by the curtain closer. Include current state.
+      // $lat = isset($_GET['lat']) ? (float)$_GET['lat'] : 0.0;
+      // $lon = isset($_GET['lon']) ? (float)$_GET['lon'] : 0.0;
+
+      $lat = 51.42;
+      $lon = -1.73;
+
+      $maxAge = null;
+      $includeMeta = 0;
+
+      if ($lat === 0.0 && $lon === 0.0) {
+        http_response_code(400);
+        echo json_encode(['error' => 'Missing or invalid lat/lon'], JSON_UNESCAPED_SLASHES);
+        exit;
+      }
+
+      $data = $this->sql->query(
+        "SELECT id,
+                fetched_at,
+                UNIX_TIMESTAMP(fetched_at) AS fetched_at_unix,
+                source,
+                om_json
+        FROM rainglow_weather
+        WHERE latitude = ? AND longitude = ?
+        ORDER BY fetched_at DESC
+        LIMIT 1",
+        [$lat, $lon]
+      );
+
+      if (!isset($data[0])) {
+        http_response_code(404);
+        echo json_encode(['error' => 'No cached weather found'], JSON_UNESCAPED_SLASHES);
+        exit;
+      }
+      $row = $data[0];
+
+      if ($maxAge !== null) {
+        $age = time() - (int)$row['fetched_at_unix'];
+        if ($age > $maxAge) {
+          http_response_code(404);
+          echo json_encode([
+            'error' => 'Cached weather too old',
+            'age_seconds' => $age
+          ], JSON_UNESCAPED_SLASHES);
+          exit;
+        }
+      }
+
+      // om_json is returned by MySQL as a string in many PDO configs; decode/echo cleanly.
+      $om = $row['om_json'];
+      if (is_string($om)) {
+        $decoded = json_decode($om, true);
+        $om = is_array($decoded) ? $decoded : $om;
+      }
+
+      if ($includeMeta) {
+        $d = json_encode([
+          'id' => (int)$row['id'],
+          'fetched_at' => $row['fetched_at'],
+          'fetched_at_unix' => (int)$row['fetched_at_unix'],
+          'source' => $row['source'],
+          'data' => $om
+        ], JSON_UNESCAPED_SLASHES);
+        return emit($response, $d);
+      } else {
+        // Serve exactly the Open-Meteo-shaped JSON to the device:
+        if (is_array($om)) {
+          return emit($response, $om);
+          // echo json_encode($om, JSON_UNESCAPED_SLASHES);
+        } else {
+          // If something odd happened, still return raw
+          return emit($response, $om);
+        }
+      }
+    }
+
     public function stateGet($request, $response, $args)
     {
       $data = $this->sql->query('Select * from rainglow_data ORDER BY timestamp DESC LIMIT 1', [])[0] ?? [];
