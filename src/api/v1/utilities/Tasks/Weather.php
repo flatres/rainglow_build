@@ -49,7 +49,7 @@ if ($latest && isset($latest['fetched_at_unix'])) {
 
 if (!$shouldFetch) {
   // Nothing to do.
-  echo 'nothing to do'
+  echo 'nothing to do';
   exit(0);
 }
 
@@ -57,7 +57,7 @@ if (!$shouldFetch) {
 try {
   $result = fetchWeatherOpenMeteoFirstThenOWM($lat, $lon, DEFAULT_HOURS, DEFAULT_TIMEFORMAT);
   saveWeatherRow($sql, $result['source'], $lat, $lon, $result['open_meteo_json'], $result['upstream_json']);
-  echo 'saved'
+  echo 'saved';
   exit(0);
 } catch (Throwable $e) {
   fwrite(STDERR, "Weather fetch failed: " . $e->getMessage() . PHP_EOL);
