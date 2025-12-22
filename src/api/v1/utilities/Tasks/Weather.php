@@ -83,7 +83,7 @@ function getLatestWeatherRow($sql, float $lat, float $lon): ?array
      LIMIT 1",
      [$lat, $lon]
   );
-
+  if (!isset($data[0]))return null;
   return $data[0] ?: null;
 }
 
