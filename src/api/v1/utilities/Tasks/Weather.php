@@ -332,10 +332,10 @@ function saveWeatherRow($sql, string $source, float $lat, float $lon, array $ope
     if ($currentBlockIdx > 5) $currentBlockIdx = 5;
 
     // 4) Center: choose temperature for current hour (nearest <= nowLocal)
-    $centerTempC = $this->nearestHourlyTemperatureLocal($times, $temps, $nowLocal);
+    $centerTempC = nearestHourlyTemperatureLocal($times, $temps, $nowLocal);
 
     // Center colour: temp scale unless "definitely rainy now" (then white alert)
-    $centerRgb = $this->centerTempToRgb($centerTempC);
+    $centerRgb = centerTempToRgb($centerTempC);
 
     // 5) Compute segments 0..5
     // Past blocks use tomorrow's equivalent block (dayOffset=1), future/current blocks dayOffset=0.
@@ -367,10 +367,10 @@ function saveWeatherRow($sql, string $source, float $lat, float $lon, array $ope
         }
       }
 
-      $rgb = $this->segmentToRgb($maxRainMm, $maxProb);
+      $rgb = segmentToRgb($maxRainMm, $maxProb);
 
       // timeStart/timeEnd are varchar(11). Use "HH:MM-HH:MM" (11 chars).
-      $timeStartStr = $this->hhmmFromLocalTs($startTs) . '-' . $this->hhmmFromLocalTs($endTs - 60);
+      $timeStartStr = hhmmFromLocalTs($startTs) . '-' . hhmmFromLocalTs($endTs - 60);
 
       $segments[$i] = [
         'dayOffset' => $dayOffset,
@@ -474,7 +474,7 @@ function saveWeatherRow($sql, string $source, float $lat, float $lon, array $ope
 
     if ($rainMm < 0.5) {
       $dry = 100.0 - $probRainPct; // 0..100
-      $g = (int)round($this->scale($dry, 0.0, 100.0, 40.0, 255.0)); // never off
+      $g = (int)round(scale($dry, 0.0, 100.0, 40.0, 255.0)); // never off
       return ['r' => 0, 'g' => $g, 'b' => 0];
     }
 
@@ -493,7 +493,7 @@ function saveWeatherRow($sql, string $source, float $lat, float $lon, array $ope
       'b' => $blue['b'] + ($purple['b'] - $blue['b']) * $t,
     ];
 
-    $brightness = $this->scale($probRainPct, 0.0, 100.0, 60.0, 255.0);
+    $brightness = $scale($probRainPct, 0.0, 100.0, 60.0, 255.0);
 
     return [
       'r' => (int)round($base['r'] * ($brightness / 255.0)),
