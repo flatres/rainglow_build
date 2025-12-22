@@ -96,7 +96,7 @@ class Rainglow
 
     public function stateGet($request, $response, $args)
     {
-      $data = $this->sql->query('Select * from rainglow_data ORDER BY timestamp DESC LIMIT 1', [])[0] ?? [];
+      $data = $this->sql->query('Select * from rainglow_data ORDER BY created_at DESC LIMIT 1', [])[0] ?? [];
       return emit($response, $data);
     }
 
