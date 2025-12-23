@@ -9,6 +9,7 @@ $app->group('/home', function(RouteCollectorProxy $group){
     $group->post('/state', '\Home\Rainglow:statePost');
     $group->get('/state', '\Home\Rainglow:stateGet');
     $group->get('/weather', '\Home\Rainglow:weatherGet');
+    $group->get('/weather/{id}', '\Home\Rainglow:weatherGet');
 });
 
 ?>

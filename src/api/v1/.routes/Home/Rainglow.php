@@ -22,6 +22,8 @@ class Rainglow
       // $lat = isset($_GET['lat']) ? (float)$_GET['lat'] : 0.0;
       // $lon = isset($_GET['lon']) ? (float)$_GET['lon'] : 0.0;
 
+      if (isset($args['id'])) {}
+
       $lat = 51.42;
       $lon = -1.73;
 
